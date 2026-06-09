@@ -1,2 +1,2 @@
 release: alembic upgrade head
-web: fastapi run main.py --port $PORT --app src.app:app
+web: fastapi run src/main.py --port $PORT
