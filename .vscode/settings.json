@@ -1,0 +1,7 @@
+{
+    "python.defaultInterpreterPath": "${workspaceFolder}/.venv",
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}/.venv/lib/python3.x/site-packages" 
+    ],
+    "python-envs.defaultEnvManager": "ms-python.python:venv"
+}
