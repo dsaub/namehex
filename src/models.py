@@ -1,11 +1,9 @@
 import uuid
 from typing import Optional
-import os
 from sqlmodel import SQLModel, Field
 from pydantic import ConfigDict
 from . import settings
-import hashlib
-import hmac
+import bcrypt
 import jwt
 
 class User(SQLModel, table=True):
@@ -15,41 +13,19 @@ class User(SQLModel, table=True):
     username: str = Field(unique=True, index=True, nullable=False)
 
     password_hash: str
+
     password_version: int = Field(default=0)
-    password_salt: str
 
     def set_password(self, password: str):
-        salt_bytes = os.urandom(16)
-        password_bytes = password.encode("utf-8")
-        key_bytes = settings.SECRET_KEY.encode("utf-8")
-        salt_combinada = salt_bytes + key_bytes
-        hash_bytes = hashlib.pbkdf2_hmac(
-            hash_name='sha256',
-            password=password_bytes,
-            salt=salt_combinada,
-            iterations=settings.ITERATIONS
-        )
-
-        self.password_hash = hash_bytes.hex()
-        self.password_salt = salt_bytes.hex()
+        self.password_hash = bcrypt.hashpw(
+            password.encode("utf-8"), bcrypt.gensalt()
+        ).decode("utf-8")
         self.password_version = self.password_version + 1
-    def verificar_password(self, password: str):
-        salt_bytes = bytes.fromhex(self.password_salt)
-        hash_guardado_bytes = bytes.fromhex(self.password_hash)
 
-        password_bytes = password.encode("utf-8")
-        key_bytes = settings.SECRET_KEY.encode("utf-8")
-
-        salt_combinada = salt_bytes + key_bytes
-
-        nuevo_hash_bytes = hashlib.pbkdf2_hmac(
-            hash_name = 'sha256',
-            password = password_bytes,
-            salt = salt_combinada,
-            iterations= settings.ITERATIONS
+    def verificar_password(self, password: str) -> bool:
+        return bcrypt.checkpw(
+            password.encode("utf-8"), self.password_hash.encode("utf-8")
         )
-
-        return hmac.compare_digest(nuevo_hash_bytes, hash_guardado_bytes)
     
     def generate_jwt(self) -> str:
         return jwt.encode(
